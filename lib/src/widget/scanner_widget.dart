@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:ml_card_scanner/ml_card_scanner.dart';
-import 'package:ml_card_scanner/src/model/scanner_exception.dart';
 import 'package:ml_card_scanner/src/utils/camera_lifecycle.dart';
 import 'package:ml_card_scanner/src/utils/card_parser_util.dart';
 import 'package:ml_card_scanner/src/utils/logger.dart';
 import 'package:ml_card_scanner/src/widget/camera_overlay_widget.dart';
 import 'package:ml_card_scanner/src/widget/camera_widget.dart';
-import 'package:ml_card_scanner/src/widget/text_overlay_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ScannerWidget extends StatefulWidget {
@@ -25,9 +23,9 @@ class ScannerWidget extends StatefulWidget {
     this.overlay,
     this.overlayText,
     this.controller,
-    this.scannerDelay = 400,
+    this.scannerDelay = 700,
     this.oneShotScanning = true,
-    this.overlayOrientation = CardOrientation.portrait,
+    this.overlayOrientation = CardOrientation.landscape,
   }) : super(key: key);
 
   @override
@@ -63,7 +61,7 @@ class _ScannerWidgetState extends State<ScannerWidget> {
     if (mounted) {
       _cameraKey.currentState?.stopCameraStream();
       _scannerController.removeListener(_scanParamsListener);
-      WidgetsBinding.instance?.removeObserver(_cameraLifecycle);
+      WidgetsBinding.instance.removeObserver(_cameraLifecycle);
       _cameraController.dispose();
     }
     super.dispose();
@@ -92,7 +90,7 @@ class _ScannerWidgetState extends State<ScannerWidget> {
           left: 0,
           right: 0,
           bottom: (MediaQuery.of(context).size.height / 5),
-          child: widget.overlayText ?? const TextOverlayWidget(),
+          child: widget.overlayText ?? const SizedBox(),
         ),
       ],
     );
@@ -118,8 +116,7 @@ class _ScannerWidgetState extends State<ScannerWidget> {
     var status = await Permission.camera.request();
     if (!status.isGranted) {
       if (_scannerController.hasError) {
-        _scannerController
-            .onError!(ScannerException('Camera permission not granted.'));
+        _scannerController.onError!(ScannerException('Camera permission not granted.'));
       }
       return false;
     }
@@ -131,18 +128,14 @@ class _ScannerWidgetState extends State<ScannerWidget> {
       }
       return false;
     }
-    if ((cameras.where((cam) => cam.lensDirection == CameraLensDirection.back))
-        .isEmpty) {
+    if ((cameras.where((cam) => cam.lensDirection == CameraLensDirection.back)).isEmpty) {
       if (_scannerController.hasError) {
-        _scannerController
-            .onError!(ScannerException('No back camera available.'));
+        _scannerController.onError!(ScannerException('No back camera available.'));
       }
       return false;
     }
-    _camera = cameras
-        .firstWhere((cam) => cam.lensDirection == CameraLensDirection.back);
-    _cameraController = CameraController(_camera, ResolutionPreset.veryHigh,
-        enableAudio: false);
+    _camera = cameras.firstWhere((cam) => cam.lensDirection == CameraLensDirection.back);
+    _cameraController = CameraController(_camera, ResolutionPreset.veryHigh, enableAudio: false);
     await _cameraController.initialize();
     return true;
   }
@@ -150,7 +143,7 @@ class _ScannerWidgetState extends State<ScannerWidget> {
   void _initLifecycle() {
     if (_scannerController.cameraPreviewEnabled) {
       _cameraLifecycle = CameraLifecycle(cameraController: _cameraController);
-      WidgetsBinding.instance?.addObserver(_cameraLifecycle);
+      WidgetsBinding.instance.addObserver(_cameraLifecycle);
     }
   }
 
